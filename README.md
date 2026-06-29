@@ -1,21 +1,37 @@
 # Agent Harness Lab
 
-Agent Harness Lab is a small LangGraph-based agent runtime for experimenting
-with skills, middleware, memory, and tool use from a local CLI.
+Agent Harness Lab is a local CLI agent built with LangGraph. It is designed to
+route user requests into different domain skills, use tools when needed, and
+keep lightweight local memory across sessions.
 
-It is designed as a reusable starting point: clone it, configure an LLM
-provider, run the CLI, then add your own skills, tools, and middleware.
+Repository: https://github.com/JosephLi0419/agent_harness_lab
 
-## What You Get
+## What This Agent Does
 
-- A LangGraph chat agent with a simple CLI.
-- Skill routing based on commands, active domain, aliases, and trigger words.
-- Built-in skills for general research, stock research, job search, and weather.
-- Local memory files that are loaded into the agent prompt at runtime.
-- Middleware for todo tracking, skill injection, memory injection, context
-  compaction, tool-call cleanup, and risky tool approval.
-- Tool support for filesystem operations, web search, web fetch, and datetime.
-- Provider support for Azure OpenAI and Ollama.
+The agent currently focuses on four practical workflows:
+
+- General research: summarize topics, compare options, collect sources, build
+  background notes, and create structured research summaries.
+- Stock research: research stocks, ETFs, earnings, market news, valuation,
+  bull and bear cases, risks, catalysts, and watch items.
+- Job search: search and compare roles, summarize job requirements, research
+  companies, prepare interview or resume angles, and create job digests.
+- Weather reports: check forecasts, compare locations, explain outdoor or
+  travel impact, and suggest what to prepare.
+
+The agent chooses a skill automatically from your message, or you can select
+one manually with CLI options or chat commands.
+
+## Features
+
+- LangGraph-based chat loop with a command-line interface.
+- Skill routing using aliases and trigger words.
+- Azure OpenAI and local Ollama provider support.
+- Local memory files for reusable preferences and research context.
+- Tool support for filesystem access, web search, webpage extraction, and
+  datetime lookup.
+- Middleware for skill injection, memory injection, todo tracking, context
+  compaction, tool-call cleanup, and approval before risky file writes.
 
 ## Requirements
 
@@ -30,7 +46,7 @@ provider, run the CLI, then add your own skills, tools, and middleware.
 Clone the repo and install dependencies:
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/JosephLi0419/agent_harness_lab.git
 cd agent_harness_lab
 uv sync
 ```
@@ -42,12 +58,6 @@ cp .env.example .env
 ```
 
 Edit `.env` for either Azure OpenAI or Ollama.
-
-Run the CLI:
-
-```bash
-uv run agent-harness-lab --help
-```
 
 Start an interactive chat:
 
@@ -74,7 +84,7 @@ AZURE_OPENAI_DEPLOYMENT=<your-deployment-name>
 AZURE_OPENAI_API_KEY=<your-azure-openai-api-key>
 ```
 
-Then run:
+Run with Azure OpenAI:
 
 ```bash
 uv run agent-harness-lab chat --provider azure
@@ -95,15 +105,15 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3.6:35b-a3b-q8_0
 ```
 
-Then run:
+Run with Ollama:
 
 ```bash
 uv run agent-harness-lab chat --provider ollama
 ```
 
-## CLI Commands
+## CLI Usage
 
-Show all commands:
+Show available commands:
 
 ```bash
 uv run agent-harness-lab --help
@@ -159,7 +169,53 @@ Inside chat, you can switch skills:
 /domain weather
 ```
 
-## Skills
+## Built-In Skills
+
+### `general_research`
+
+Use this for broad research, comparisons, summaries, source gathering,
+background analysis, timelines, and decision support.
+
+Example:
+
+```bash
+uv run agent-harness-lab ask --skill general_research "Compare LangGraph and CrewAI"
+```
+
+### `stock_research`
+
+Use this for stocks, ETFs, market news, earnings, valuation, catalysts, risks,
+portfolio questions, and investment research notes.
+
+Example:
+
+```bash
+uv run agent-harness-lab ask --skill stock_research "Analyze NVDA's current bull and bear case"
+```
+
+### `job_search`
+
+Use this for job postings, role comparison, company research, resume targeting,
+interview preparation, salary research, and job-market digests.
+
+Example:
+
+```bash
+uv run agent-harness-lab ask --skill job_search "Find AI product manager roles and rank them"
+```
+
+### `weather_reports`
+
+Use this for current weather, forecasts, rain risk, typhoons, travel weather,
+outdoor planning, and what to wear or bring.
+
+Example:
+
+```bash
+uv run agent-harness-lab ask --skill weather_reports "Will Taipei be good for running tomorrow morning?"
+```
+
+## How Skills Work
 
 Skills are prompt packages stored under:
 
@@ -169,8 +225,7 @@ harness_agent/skills/<skill_id>/
   manifest.toml
 ```
 
-`SKILL.md` contains the instructions that are injected into the agent prompt.
-`manifest.toml` controls routing:
+`SKILL.md` contains the domain instructions. `manifest.toml` controls routing:
 
 ```toml
 id = "stock_research"
@@ -191,35 +246,28 @@ Skill selection priority:
 7. general_research
 ```
 
-Built-in skills:
+## Reusing This Repo
 
-- `general_research`
-- `stock_research`
-- `job_search`
-- `weather_reports`
+To adapt this project for your own agent:
 
-To add a new skill:
-
-1. Create `harness_agent/skills/<your_skill>/`.
-2. Add `SKILL.md`.
-3. Add `manifest.toml`.
-4. Run `uv run agent-harness-lab skills` to confirm it loads.
+1. Update the base prompt in `harness_agent/prompts/SOUL.md`.
+2. Replace or add skills in `harness_agent/skills/`.
+3. Add domain-specific tools in `harness_agent/tools/`.
+4. Wire new middleware into `harness_agent/middleware/__init__.py`.
+5. Keep secrets in `.env`.
 
 ## Memory And Generated Files
 
 On first run, the app creates local memory files under `memory/`. Agent outputs
 or research notes may be saved under `reports/`.
 
-These folders are intentionally ignored by git because they can contain local
-preferences, research history, or personal output:
+These folders can contain local preferences, research history, or personal
+output, so they are not included as reusable source files:
 
 ```text
 memory/
 reports/
 ```
-
-Share reusable examples through documentation or fixtures instead of committing
-your personal runtime files.
 
 ## Project Layout
 
@@ -277,27 +325,3 @@ model = ""
 ```
 
 Set `model` when you want to override the model or deployment from `.env`.
-
-## Development
-
-Run the package through `uv`:
-
-```bash
-uv run python -m harness_agent.main --help
-```
-
-Check that the project imports:
-
-```bash
-uv run python -m compileall harness_agent
-```
-
-Before publishing to GitHub, verify that only source, docs, examples, and
-configuration templates are staged:
-
-```bash
-git status --short --ignored
-```
-
-Do not commit `.env`, `.venv/`, `memory/`, `reports/`, `__pycache__/`, or
-`*.egg-info/`.
