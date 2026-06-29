@@ -1,0 +1,20 @@
+id = "stock_research"
+name = "Stock Research"
+aliases = ["stock", "stocks", "market", "finance", "investment", "stock research"]
+triggers = [
+    "stock",
+    "stocks",
+    "etf",
+    "earnings",
+    "valuation",
+    "market",
+    "portfolio",
+    "股票",
+    "股價",
+    "財報",
+    "投資",
+    "市場",
+    "美股",
+    "台股",
+    "科技股",
+]

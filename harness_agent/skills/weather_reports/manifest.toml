@@ -1,0 +1,14 @@
+id = "weather_reports"
+name = "Weather Reports"
+aliases = ["weather", "forecast", "weather reports"]
+triggers = [
+    "weather",
+    "forecast",
+    "rain",
+    "temperature",
+    "typhoon",
+    "天氣",
+    "氣溫",
+    "下雨",
+    "颱風",
+]

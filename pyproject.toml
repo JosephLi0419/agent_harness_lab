@@ -1,0 +1,32 @@
+[project]
+name = "agent-harness-lab"
+version = "0.1.0"
+description = "A LangGraph agent runtime for experimenting with skills, middleware, memory, and tool use."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "duckduckgo-search",
+    "ddgs",
+    "langchain-community",
+    "langchain-core",
+    "langchain-ollama",
+    "langchain-openai",
+    "langgraph",
+    "openai",
+    "python-dotenv",
+    "rich",
+    "trafilatura",
+]
+
+[project.scripts]
+agent-harness-lab = "harness_agent.main:main"
+
+[tool.setuptools.packages.find]
+include = ["harness_agent*"]
+
+[tool.setuptools.package-data]
+harness_agent = ["prompts/*.md", "skills/*/SKILL.md", "skills/*/manifest.toml"]
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
