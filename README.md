@@ -4,8 +4,6 @@ Agent Harness Lab is a local CLI agent built with LangGraph. It is designed to
 route user requests into different domain skills, use tools when needed, and
 keep lightweight local memory across sessions.
 
-Repository: https://github.com/JosephLi0419/agent_harness_lab
-
 ## What This Agent Does
 
 The agent currently focuses on four practical workflows:

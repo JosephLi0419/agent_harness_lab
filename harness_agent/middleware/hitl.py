@@ -67,12 +67,6 @@ def request_approval(tool_calls: list[dict[str, Any]]) -> bool:
         if isinstance(args, dict) and "file_path" in args:
             print(f"   Path: {args['file_path']}")
 
-        if isinstance(args, dict) and "content" in args:
-            preview = str(args["content"])[:500]
-            if len(str(args["content"])) > 500:
-                preview += "\n... (truncated)"
-            print(preview)
-
     while True:
         choice = input("\nApprove all? (yes/no): ").strip().lower()
         if choice in {"y", "yes"}:
