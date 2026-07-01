@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import time
 from typing import Annotated, Any, TypedDict
 
+import httpx
 from langchain_core.messages import AIMessage, AnyMessage, SystemMessage, ToolMessage
 from langgraph.config import get_stream_writer
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-from openai import BadRequestError
+from openai import APIConnectionError, APITimeoutError, BadRequestError
 
 from .middleware import (
     DEFAULT_SKILL_ID,
@@ -45,6 +47,9 @@ class AgentState(TypedDict, total=False):
 
 
 BASE_TOOLS = [*FILESYSTEM_TOOLS, *WEB_SEARCH_TOOLS, *WEB_FETCH_TOOLS, *DATETIME_TOOLS]
+MODEL_RETRY_ATTEMPTS = 2
+MODEL_RETRY_INITIAL_DELAY_SECONDS = 0.75
+TRANSIENT_MODEL_ERRORS = (APIConnectionError, APITimeoutError, httpx.TransportError)
 MIDDLEWARE_STATE_KEYS = (
     "active_skills",
     "pinned_skills",
@@ -121,7 +126,7 @@ def build_graph(
         model = llm.bind_tools(bound_tools)
 
         try:
-            response = model.invoke([SystemMessage(content=system), *messages])
+            response = _invoke_model_with_retry(model, [SystemMessage(content=system), *messages])
         except BadRequestError as e:
             error_detail = _extract_content_filter_reason(e)
             response = AIMessage(
@@ -130,6 +135,13 @@ def build_graph(
                     f"{error_detail}\nTry rephrasing your last message or starting a new session."
                 )
             )
+        except TRANSIENT_MODEL_ERRORS as e:
+            _emit_runtime_event({
+                "event": "model_error",
+                "error_type": type(e).__name__,
+                "retryable": True,
+            })
+            response = AIMessage(content=_format_transient_model_error(e))
 
         updates["messages"] = [response]
         if response.tool_calls:
@@ -245,6 +257,27 @@ def _rejected_tool_messages(tool_calls: list[dict[str, Any]]) -> list[ToolMessag
     return messages
 
 
+def _invoke_model_with_retry(model: Any, messages: list[AnyMessage]) -> AIMessage:
+    """Retry once for transient provider transport failures."""
+    for attempt in range(1, MODEL_RETRY_ATTEMPTS + 1):
+        try:
+            return model.invoke(messages)
+        except TRANSIENT_MODEL_ERRORS as e:
+            if attempt >= MODEL_RETRY_ATTEMPTS:
+                raise
+            delay = MODEL_RETRY_INITIAL_DELAY_SECONDS * attempt
+            _emit_runtime_event({
+                "event": "model_retry",
+                "error_type": type(e).__name__,
+                "attempt": attempt,
+                "max_attempts": MODEL_RETRY_ATTEMPTS,
+                "delay_seconds": delay,
+            })
+            time.sleep(delay)
+
+    raise RuntimeError("Model retry loop exhausted unexpectedly.")
+
+
 def _emit_todo_list_if_updated(tool_calls: list[dict[str, Any]], state: AgentState) -> None:
     if not any(tool_call.get("name") == "write_todo_list" for tool_call in tool_calls):
         return
@@ -268,6 +301,17 @@ def _extract_content_filter_reason(e: BadRequestError) -> str:
         return f"content filter triggered - {', '.join(triggered)}" if triggered else str(e)
     except Exception:
         return str(e)
+
+
+def _format_transient_model_error(e: BaseException) -> str:
+    """Return a user-facing message for retryable model transport failures."""
+    detail = str(e).strip() or "connection interrupted"
+    return (
+        "The LLM provider connection was interrupted before the response completed "
+        f"({type(e).__name__}: {detail}).\n"
+        "Please retry your request. If this keeps happening, check the network, "
+        "provider endpoint, or try another provider/model."
+    )
 
 
 def _emit_runtime_event(payload: dict[str, Any]) -> None:

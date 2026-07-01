@@ -274,6 +274,21 @@ def _print_runtime_event(
     if event == "model_done":
         return
 
+    if event == "model_retry":
+        attempt = payload.get("attempt")
+        max_attempts = payload.get("max_attempts")
+        delay = payload.get("delay_seconds")
+        error_type = payload.get("error_type", "transport error")
+        console.print(
+            "[dim]model connection interrupted "
+            f"({escape(str(error_type))}); retrying {attempt}/{max_attempts} "
+            f"in {delay}s[/dim]"
+        )
+        return
+
+    if event == "model_error":
+        return
+
     if event == "tool_plan":
         return
 

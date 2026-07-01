@@ -9,6 +9,7 @@ source = { editable = "." }
 dependencies = [
     { name = "ddgs" },
     { name = "duckduckgo-search" },
+    { name = "httpx" },
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-ollama" },
@@ -24,6 +25,7 @@ dependencies = [
 requires-dist = [
     { name = "ddgs" },
     { name = "duckduckgo-search" },
+    { name = "httpx" },
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-ollama" },

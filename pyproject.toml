@@ -7,6 +7,7 @@ requires-python = ">=3.14"
 dependencies = [
     "duckduckgo-search",
     "ddgs",
+    "httpx",
     "langchain-community",
     "langchain-core",
     "langchain-ollama",
