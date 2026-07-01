@@ -224,6 +224,7 @@ def _run_turn(
     config: dict[str, Any],
     skills: SkillsMiddleware,
 ) -> None:
+    state = {**state, "context_window_events": []}
     result: dict[str, Any] = {}
     seen_runtime: dict[str, Any] = {}
     for chunk in app.stream(state, config, stream_mode=["custom", "values"]):
@@ -237,6 +238,7 @@ def _run_turn(
     if response:
         console.print()
         console.print(Markdown(response))
+    _print_context_window(result)
 
 
 def _print_runtime_event(
@@ -258,16 +260,6 @@ def _print_runtime_event(
             "[dim]domain prompts: "
             f"[cyan]{', '.join(labels) if labels else 'none'}[/cyan][/dim]"
         )
-        return
-
-    if event == "compaction":
-        details = payload.get("details")
-        if seen_runtime.get("compaction") and not (details and not seen_runtime.get("compaction_active")):
-            return
-        seen_runtime["compaction"] = True
-        if details:
-            seen_runtime["compaction_active"] = True
-        console.print(f"[dim]compaction: {_format_compaction_status(details)}[/dim]")
         return
 
     if event == "tools_bound":
@@ -301,9 +293,8 @@ def _print_runtime_event(
         return
 
     if event == "approval_required":
-        tool_calls = payload.get("tool_calls") or []
-        names = ", ".join(str(call.get("name", "unknown")) for call in tool_calls)
-        console.print(f"[red]approval required: {names}[/red]")
+        # request_approval() prints the detailed interactive prompt. Emitting
+        # this runtime event in parallel can interleave Rich output with input().
         return
 
     if event == "approval_result":
@@ -345,6 +336,72 @@ def _print_todo_list(todos: list[Any]) -> None:
         )
 
 
+def _print_context_window(result: dict[str, Any]) -> None:
+    events = result.get("context_window_events")
+    if not isinstance(events, list) or not events:
+        return
+
+    compacted_events = [
+        event for event in events
+        if isinstance(event, dict) and event.get("compaction_triggered")
+    ]
+    console.print()
+    if compacted_events:
+        event = compacted_events[-1]
+        threshold = _positive_int(event.get("threshold"))
+        raw_tokens = _non_negative_int(event.get("raw_tokens"))
+        model_tokens = _non_negative_int(event.get("model_input_tokens"))
+        compacted_messages = _non_negative_int(event.get("compacted_messages"))
+        console.print(
+            f"[dim]{escape(_format_context_bar('raw context', raw_tokens, threshold))}[/dim]"
+        )
+        console.print(
+            f"[dim]{escape(_format_context_bar('model context', model_tokens, threshold))}[/dim]"
+        )
+        console.print(
+            "[dim]compaction: "
+            f"compacted {compacted_messages:,} earlier messages; "
+            f"{max(threshold - model_tokens, 0):,} tokens until next compaction[/dim]"
+        )
+        return
+
+    latest = result.get("context_window")
+    if not isinstance(latest, dict):
+        latest = events[-1] if isinstance(events[-1], dict) else {}
+    threshold = _positive_int(latest.get("threshold"))
+    raw_tokens = _non_negative_int(latest.get("raw_tokens"))
+    console.print(
+        f"[dim]{escape(_format_context_bar('context window', raw_tokens, threshold))}[/dim]"
+    )
+    console.print(
+        "[dim]until compaction: "
+        f"{max(threshold - raw_tokens, 0):,} tokens[/dim]"
+    )
+
+
+def _format_context_bar(label: str, tokens: int, threshold: int, width: int = 24) -> str:
+    ratio = tokens / threshold if threshold else 0
+    filled = min(width, round(ratio * width))
+    bar = "█" * filled + "░" * (width - filled)
+    return f"{label:<14} [{bar}] {tokens:,} / {threshold:,} tokens {ratio * 100:5.1f}%"
+
+
+def _positive_int(value: Any, default: int = 1) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(parsed, 1)
+
+
+def _non_negative_int(value: Any) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return max(parsed, 0)
+
+
 def _unpack_stream_chunk(chunk: Any) -> tuple[str, Any]:
     if isinstance(chunk, tuple):
         if len(chunk) == 2:
@@ -360,19 +417,6 @@ def _skill_labels(skills: SkillsMiddleware, active_skill_ids: list[str]) -> list
         skill = skills.resolve(skill_id)
         labels.append(f"{skill.id} ({skill.name})" if skill else str(skill_id))
     return labels
-
-
-def _format_compaction_status(compaction: Any) -> str:
-    if not compaction:
-        return "[green]inactive this turn[/green]"
-    if not isinstance(compaction, dict):
-        return f"[yellow]{compaction}[/yellow]"
-    return (
-        "[yellow]active[/yellow] "
-        f"compacted={compaction.get('compacted_messages')} "
-        f"original_tokens={compaction.get('original_tokens')} "
-        f"kept_tokens={compaction.get('kept_tokens')}"
-    )
 
 
 def _format_args_preview(args: Any) -> str:

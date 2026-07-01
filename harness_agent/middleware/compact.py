@@ -55,6 +55,13 @@ class CompactMiddleware(AgentMiddleware):
         total = count_tokens_approximately(messages)
         if total < self.threshold:
             state["last_compaction"] = None
+            _record_context_window(
+                state,
+                threshold=self.threshold,
+                raw_tokens=total,
+                model_input_tokens=total,
+                compaction_triggered=False,
+            )
             return messages
 
         groups = _message_groups(list(messages))
@@ -68,6 +75,13 @@ class CompactMiddleware(AgentMiddleware):
 
         if not to_summarize:
             state["last_compaction"] = None
+            _record_context_window(
+                state,
+                threshold=self.threshold,
+                raw_tokens=total,
+                model_input_tokens=total,
+                compaction_triggered=False,
+            )
             return messages
 
         history_text = "\n".join(
@@ -83,13 +97,50 @@ class CompactMiddleware(AgentMiddleware):
                 f"{response.content}"
             )
         )
+        compacted_messages = [summary] + list(keep)
+        after_tokens = count_tokens_approximately(compacted_messages)
 
         state["last_compaction"] = {
             "compacted_messages": len(to_summarize),
             "original_tokens": total,
             "kept_tokens": count_tokens_approximately(keep),
+            "after_tokens": after_tokens,
         }
-        return [summary] + list(keep)
+        _record_context_window(
+            state,
+            threshold=self.threshold,
+            raw_tokens=total,
+            model_input_tokens=after_tokens,
+            compaction_triggered=True,
+            compacted_messages=len(to_summarize),
+        )
+        return compacted_messages
+
+
+def _record_context_window(
+    state: AgentState,
+    *,
+    threshold: int,
+    raw_tokens: int,
+    model_input_tokens: int,
+    compaction_triggered: bool,
+    compacted_messages: int = 0,
+) -> None:
+    event = {
+        "threshold": threshold,
+        "raw_tokens": raw_tokens,
+        "model_input_tokens": model_input_tokens,
+        "raw_tokens_until_compaction": max(threshold - raw_tokens, 0),
+        "tokens_until_compaction": max(threshold - model_input_tokens, 0),
+        "compaction_triggered": compaction_triggered,
+        "compacted_messages": compacted_messages,
+    }
+    events = state.get("context_window_events")
+    if not isinstance(events, list):
+        events = []
+    events.append(event)
+    state["context_window_events"] = events
+    state["context_window"] = event
 
 
 def _message_text(message: AnyMessage) -> str:

@@ -64,8 +64,14 @@ def request_approval(tool_calls: list[dict[str, Any]]) -> bool:
         args = tool_call.get("args", {})
         print(f"\n{index}. {name}")
 
-        if isinstance(args, dict) and "file_path" in args:
-            print(f"   Path: {args['file_path']}")
+        if isinstance(args, dict):
+            for label, key in (
+                ("Path", "file_path"),
+                ("Source", "source_path"),
+                ("Destination", "destination_path"),
+            ):
+                if key in args:
+                    print(f"   {label}: {args[key]}")
 
     while True:
         choice = input("\nApprove all? (yes/no): ").strip().lower()

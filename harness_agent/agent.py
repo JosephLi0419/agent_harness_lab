@@ -40,6 +40,8 @@ class AgentState(TypedDict, total=False):
     last_argument_truncation: dict[str, Any]
     last_compaction: dict[str, Any]
     last_patched_tool_calls: list[dict[str, str]]
+    context_window: dict[str, Any]
+    context_window_events: list[dict[str, Any]]
 
 
 BASE_TOOLS = [*FILESYSTEM_TOOLS, *WEB_SEARCH_TOOLS, *WEB_FETCH_TOOLS, *DATETIME_TOOLS]
@@ -50,6 +52,8 @@ MIDDLEWARE_STATE_KEYS = (
     "last_argument_truncation",
     "last_compaction",
     "last_patched_tool_calls",
+    "context_window",
+    "context_window_events",
 )
 
 
@@ -108,10 +112,6 @@ def build_graph(
         _emit_runtime_event({
             "event": "skills_selected",
             "active_skills": working_state.get("active_skills", []),
-        })
-        _emit_runtime_event({
-            "event": "compaction",
-            "details": working_state.get("last_compaction"),
         })
         _emit_runtime_event({
             "event": "tools_bound",

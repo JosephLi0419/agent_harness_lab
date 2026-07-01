@@ -1,4 +1,4 @@
-"""Filesystem tools for the agent: ls, read_file, glob, grep, write_file, edit_file."""
+"""Filesystem tools for the agent."""
 
 from __future__ import annotations
 
@@ -23,6 +23,15 @@ class ReadFileInput(BaseModel):
 class WriteFileInput(BaseModel):
     file_path: str = Field(description="Absolute path to write")
     content: str = Field(description="Full content to write")
+
+
+class RenameFileInput(BaseModel):
+    source_path: str = Field(description="Absolute path to the existing file")
+    destination_path: str = Field(description="Absolute path for the renamed file")
+
+
+class DeleteFileInput(BaseModel):
+    file_path: str = Field(description="Absolute path to the file to delete")
 
 
 class EditFileInput(BaseModel):
@@ -172,6 +181,49 @@ def write_file(file_path: str, content: str) -> str:
         return f"Error writing file: {e}"
 
 
+@tool(args_schema=RenameFileInput)
+def rename_file(source_path: str, destination_path: str) -> str:
+    """Rename or move a file without overwriting an existing destination.
+
+    This is a high-risk operation — always requires human approval before execution.
+    """
+    source = Path(source_path)
+    destination = Path(destination_path)
+
+    if not source.exists():
+        return f"Error: source_not_found: {source_path}"
+    if source.is_dir():
+        return f"Error: source_is_directory: {source_path}"
+    if destination.exists():
+        return f"Error: destination_exists: {destination_path}"
+
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        source.rename(destination)
+        return f"Successfully renamed {source} to {destination}"
+    except Exception as e:
+        return f"Error renaming file: {e}"
+
+
+@tool(args_schema=DeleteFileInput)
+def delete_file(file_path: str) -> str:
+    """Delete a single file.
+
+    This is a high-risk operation — always requires human approval before execution.
+    """
+    path = Path(file_path)
+    if not path.exists():
+        return f"Error: file_not_found: {file_path}"
+    if path.is_dir():
+        return f"Error: is_directory: {file_path}"
+
+    try:
+        path.unlink()
+        return f"Successfully deleted {path}"
+    except Exception as e:
+        return f"Error deleting file: {e}"
+
+
 @tool(args_schema=EditFileInput)
 def edit_file(file_path: str, old_string: str, new_string: str) -> str:
     """Perform an exact string replacement in a file.
@@ -199,7 +251,16 @@ def edit_file(file_path: str, old_string: str, new_string: str) -> str:
 
 
 # Exported list for use in the agent
-FILESYSTEM_TOOLS = [ls, read_file, glob, grep, write_file, edit_file]
+FILESYSTEM_TOOLS = [
+    ls,
+    read_file,
+    glob,
+    grep,
+    write_file,
+    rename_file,
+    delete_file,
+    edit_file,
+]
 
-# write_file (full overwrite) requires HITL; edit_file (targeted) does not
-HIGH_RISK_TOOLS = {"write_file"}
+# Full overwrites, renames/moves, and deletes require HITL; edit_file remains targeted.
+HIGH_RISK_TOOLS = {"write_file", "rename_file", "delete_file"}

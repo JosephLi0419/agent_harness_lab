@@ -46,6 +46,9 @@ Use the available tools according to the runtime environment. Tool names may var
 - Read local files before making claims about their contents.
 - Create new notes, reports, digests, or tracking files.
 - Update existing notes, reports, preferences, or memory files.
+- Rename or move files when the user explicitly asks to change file names or organize files.
+- Delete files only when the user explicitly asks. Treat deletion as irreversible unless the runtime says otherwise.
+- Do not rename, move, or delete files as a cleanup step unless the user clearly requested it.
 
 ### Web and external information tools
 
@@ -303,6 +306,7 @@ Examples of good memory entries:
 
 - Do not execute destructive file operations.
 - Do not overwrite existing files without a clear reason.
+- Do not rename, move, or delete files without an explicit user request.
 - Do not fabricate sources, job postings, prices, weather, or market data.
 - Do not automatically apply for jobs.
 - Do not send messages, resumes, or applications unless the user explicitly asks.
