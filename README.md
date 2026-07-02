@@ -23,7 +23,7 @@ one manually with CLI options or chat commands.
 ## Features
 
 - LangGraph-based chat loop with a command-line interface.
-- Skill routing using aliases and trigger words.
+- LLM-based skill routing using each skill prompt's front matter.
 - Azure OpenAI and local Ollama provider support.
 - Local memory files for reusable preferences and research context.
 - Tool support for filesystem access, web search, webpage extraction, and
@@ -220,28 +220,49 @@ Skills are prompt packages stored under:
 ```text
 harness_agent/skills/<skill_id>/
   SKILL.md
-  manifest.toml
+  reports.md
 ```
 
-`SKILL.md` contains the domain instructions. `manifest.toml` controls routing:
+`SKILL.md` starts with a fixed YAML-style front matter block. The LLM router
+only reads this metadata while selecting a skill. After a skill is selected,
+the agent loads and injects the full `SKILL.md`.
 
-```toml
-id = "stock_research"
-name = "Stock Research"
-aliases = ["stock", "stocks", "market", "finance"]
-triggers = ["stock", "earnings", "valuation", "股票", "股價"]
+```md
+---
+name: skill-name-lowercase
+version: 1.0
+description: |
+  Use this skill when the user needs a specific task or workflow. Explain both
+  what the skill does and when it should be selected.
+trigger_keywords:
+  - optional keyword
+  - optional phrase
+---
 ```
+
+`name` must be lowercase letters, numbers, and hyphens only, up to 64
+characters. `trigger_keywords` is optional and is passed to the LLM router as
+extra routing context, not used for deterministic keyword matching.
+
+The `<skill_id>` folder name is still used internally for state, memory, and
+prompt injection. The LLM router does not see that folder id; it chooses from
+the `SKILL.md` front matter names.
+
+`reports.md` defines the report template for that skill. When a skill needs to
+generate a saved report, its `SKILL.md` should instruct the agent to consult the
+matching `reports.md` before writing the report.
 
 Skill selection priority:
 
 ```text
 1. /skill or /domain command in the latest user message
 2. state["pinned_skills"]
-3. state["active_skills"]
-4. state["active_domain"]
-5. trigger keyword routing from the latest user message
-6. build_graph(domain=...)
-7. general_research
+3. state["active_domain"]
+4. state["active_skills"] when no messages are present
+5. state["skill_ids"]
+6. LLM routing from the latest user message and each SKILL.md front matter
+7. build_graph(domain=...)
+8. general_research
 ```
 
 ## Reusing This Repo

@@ -26,7 +26,7 @@ agent-harness-lab = "harness_agent.main:main"
 include = ["harness_agent*"]
 
 [tool.setuptools.package-data]
-harness_agent = ["prompts/*.md", "skills/*/SKILL.md", "skills/*/manifest.toml"]
+harness_agent = ["prompts/*.md", "skills/*/SKILL.md", "skills/*/reports.md"]
 
 [build-system]
 requires = ["setuptools>=69", "wheel"]

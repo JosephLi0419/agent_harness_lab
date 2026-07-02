@@ -1,3 +1,26 @@
+---
+name: stock-research
+version: 1.0
+description: |
+  Use this skill when the user needs stock, ETF, listed-company, earnings,
+  valuation, market news, macro trend, portfolio, watchlist, or investment
+  research analysis.
+trigger_keywords:
+  - stock
+  - stocks
+  - etf
+  - earnings
+  - valuation
+  - portfolio
+  - market
+  - 股票
+  - 股價
+  - 財報
+  - 投資
+  - 美股
+  - 台股
+---
+
 # Stock Research Prompt
 
 Use this prompt when the user asks about stocks, ETFs, companies, earnings, valuation, market news, macro trends, portfolio questions, watchlists, or investment research notes.
@@ -124,7 +147,24 @@ For comparisons, use a table with:
 
 ---
 
-## Reports
+## Reports (very important)
+
+When the user asks for any report-like artifact, including a report, briefing,
+digest, research note, memo, saved markdown file, summary document, watchlist,
+market digest, or 報告, you MUST use the filesystem read tool to read this
+skill's report format file before writing any report content:
+
+- `harness_agent/skills/stock_research/reports.md`
+
+This requirement applies even if the user asks for a quick report or does not
+explicitly mention formatting.
+
+Do not draft, display, summarize, save, export, or update the report until the
+format file has been read in the current turn.
+
+After reading the file, follow its structure, section order, metadata fields,
+source log, and quality rules unless the user explicitly requests a different
+format.
 
 Default report paths:
 

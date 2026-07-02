@@ -154,14 +154,13 @@ def _skills_command(args: argparse.Namespace) -> int:
     table = Table(title="Available Skills", header_style="bold cyan")
     table.add_column("Skill", style="bold")
     table.add_column("Name")
-    table.add_column("Aliases", style="dim")
-    table.add_column("Triggers", style="dim")
+    table.add_column("Version", style="dim")
+    table.add_column("Routing profile", style="dim")
     for skill in skills.list_skills():
-        aliases = ", ".join(skill.aliases) if skill.aliases else "-"
-        triggers = ", ".join(skill.triggers[:8]) if skill.triggers else "-"
-        if len(skill.triggers) > 8:
-            triggers += ", ..."
-        table.add_row(skill.id, skill.name, aliases, triggers)
+        profile = " ".join(skill.routing_description.split()) or "-"
+        if len(profile) > 140:
+            profile = f"{profile[:137]}..."
+        table.add_row(skill.id, skill.routing_name, skill.version or "-", profile)
     console.print(table)
     return 0
 
@@ -195,7 +194,7 @@ def _setup_runtime(
     ensure_memory_files(args.domain)
 
     llm = create_llm(provider=provider)
-    skills_middleware = SkillsMiddleware(fallback_skill_id=args.domain)
+    skills_middleware = SkillsMiddleware(fallback_skill_id=args.domain, router_llm=llm)
     app = build_graph(
         llm,
         domain=args.domain,
@@ -430,7 +429,7 @@ def _skill_labels(skills: SkillsMiddleware, active_skill_ids: list[str]) -> list
     labels = []
     for skill_id in active_skill_ids:
         skill = skills.resolve(skill_id)
-        labels.append(f"{skill.id} ({skill.name})" if skill else str(skill_id))
+        labels.append(skill.routing_name if skill else str(skill_id))
     return labels
 
 

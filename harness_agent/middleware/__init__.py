@@ -34,7 +34,10 @@ def build_default_middleware_stack(
     ]
 
     if include_skills:
-        middlewares.append(skills_middleware or SkillsMiddleware(fallback_skill_id=domain))
+        middlewares.append(skills_middleware or SkillsMiddleware(
+            fallback_skill_id=domain,
+            router_llm=llm,
+        ))
 
     middlewares.append(PatchToolCallsMiddleware())
 

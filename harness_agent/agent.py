@@ -42,6 +42,7 @@ class AgentState(TypedDict, total=False):
     last_argument_truncation: dict[str, Any]
     last_compaction: dict[str, Any]
     last_patched_tool_calls: list[dict[str, str]]
+    last_skill_route_user_text: str
     context_window: dict[str, Any]
     context_window_events: list[dict[str, Any]]
 
@@ -57,6 +58,7 @@ MIDDLEWARE_STATE_KEYS = (
     "last_argument_truncation",
     "last_compaction",
     "last_patched_tool_calls",
+    "last_skill_route_user_text",
     "context_window",
     "context_window_events",
 )
@@ -79,7 +81,7 @@ def build_graph(
     The middleware stack owns cross-cutting behavior such as todo tracking,
     dangling tool-call patching, argument truncation, memory, and compaction.
     """
-    skills = skills_middleware or SkillsMiddleware(fallback_skill_id=domain)
+    skills = skills_middleware or SkillsMiddleware(fallback_skill_id=domain, router_llm=llm)
     stack = middleware_stack or build_default_middleware_stack(
         llm=llm,
         domain=domain,

@@ -1,3 +1,24 @@
+---
+name: job-search
+version: 1.0
+description: |
+  Use this skill when the user needs job search help, role or company research,
+  career planning, salary analysis, resume targeting, interview preparation,
+  job market trend research, or recurring job digests.
+trigger_keywords:
+  - job
+  - jobs
+  - career
+  - resume
+  - interview
+  - salary
+  - 職缺
+  - 工作
+  - 履歷
+  - 面試
+  - 薪水
+---
+
 # Job Search Prompt
 
 Use this prompt when the user asks about jobs, roles, companies, career planning, salary, resume targeting, job market trends, or recurring job digests.
@@ -96,7 +117,24 @@ For resume targeting, include:
 
 ---
 
-## Reports
+## Reports (very important)
+
+When the user asks for any report-like artifact, including a report, briefing,
+digest, research note, memo, saved markdown file, summary document, shortlist,
+company note, role comparison, or 報告, you MUST use the filesystem read tool to
+read this skill's report format file before writing any report content:
+
+- `harness_agent/skills/job_search/reports.md`
+
+This requirement applies even if the user asks for a quick report or does not
+explicitly mention formatting.
+
+Do not draft, display, summarize, save, export, or update the report until the
+format file has been read in the current turn.
+
+After reading the file, follow its structure, section order, metadata fields,
+source log, ranking tables, and quality rules unless the user explicitly
+requests a different format.
 
 Default report paths:
 

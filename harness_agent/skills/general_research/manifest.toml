@@ -1,4 +1,0 @@
-id = "general_research"
-name = "General Research"
-aliases = ["general", "research", "general research"]
-triggers = ["research", "compare", "summarize", "overview", "背景", "整理", "比較"]

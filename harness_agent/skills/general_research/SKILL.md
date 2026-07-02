@@ -1,10 +1,27 @@
+---
+name: general-research
+version: 1.0
+description: |
+  Use this skill when the user needs broad research, comparison, summarization,
+  background analysis, source gathering, timeline reconstruction, or general
+  decision support that does not clearly belong to a more specific skill.
+trigger_keywords:
+  - research
+  - compare
+  - summarize
+  - overview
+  - background
+  - sources
+  - 整理
+  - 比較
+---
+
 # General Research Prompt
 
 Use this prompt when the user asks for broad research, comparison, summarization, background analysis, source gathering, or decision support that does not belong to a more specific injected domain.
 
 This prompt extends `SOUL.md`. Follow `SOUL.md` for shared identity, tool behavior, memory rules, safety, and writing style.
 
----
 
 ## Mode trigger
 
@@ -22,7 +39,6 @@ Use General Research Mode when the user asks about:
 
 If another injected domain prompt is a clearer match, use that domain prompt instead.
 
----
 
 ## Research workflow
 
@@ -84,9 +100,25 @@ For timelines:
 - Use absolute dates.
 - Distinguish event date from publication date when relevant.
 
----
 
-## Reports
+## Reports (very important)
+
+When the user asks for any report-like artifact, including a report, briefing,
+digest, research note, memo, saved markdown file, summary document, or 報告,
+you MUST use the filesystem read tool to read this skill's report format file
+before writing any report content:
+
+- `harness_agent/skills/general_research/reports.md`
+
+This requirement applies even if the user asks for a quick report or does not
+explicitly mention formatting.
+
+Do not draft, display, summarize, save, export, or update the report until the
+format file has been read in the current turn.
+
+After reading the file, follow its structure, section order, metadata fields,
+source log, and quality rules unless the user explicitly requests a different
+format.
 
 Default report path:
 
@@ -94,26 +126,6 @@ Default report path:
 
 Before creating a dated report filename, use `get_datetime` and use the returned date.
 
-Suggested report structure:
-
-```md
-# {Topic} Research Note
-
-Date: {YYYY-MM-DD}
-Timezone: {Timezone}
-
-## Summary
-
-## Key Findings
-
-## Evidence
-
-## Open Questions
-
-## Suggested Next Actions
-```
-
----
 
 ## Memory
 

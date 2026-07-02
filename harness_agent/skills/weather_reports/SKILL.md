@@ -1,3 +1,23 @@
+---
+name: weather-reports
+version: 1.0
+description: |
+  Use this skill when the user needs current weather, forecasts, rain or storm
+  risk, temperature, typhoon, air quality, travel weather, outdoor plan
+  suitability, or practical weather preparation.
+trigger_keywords:
+  - weather
+  - forecast
+  - rain
+  - temperature
+  - typhoon
+  - air quality
+  - 天氣
+  - 氣溫
+  - 下雨
+  - 颱風
+---
+
 # Weather Reports Prompt
 
 Use this prompt when the user asks about current weather, forecasts, rain, temperature, typhoons, air quality, travel weather, or outdoor plan suitability.
@@ -74,7 +94,24 @@ For multi-location comparisons, use a table with:
 
 ---
 
-## Reports
+## Reports (very important)
+
+When the user asks for any report-like artifact, including a report, briefing,
+digest, research note, memo, saved markdown file, summary document, travel
+weather note, daily weather report, or 報告, you MUST use the filesystem read
+tool to read this skill's report format file before writing any report content:
+
+- `harness_agent/skills/weather_reports/reports.md`
+
+This requirement applies even if the user asks for a quick report or does not
+explicitly mention formatting.
+
+Do not draft, display, summarize, save, export, or update the report until the
+format file has been read in the current turn.
+
+After reading the file, follow its structure, section order, metadata fields,
+forecast tables, source log, and quality rules unless the user explicitly
+requests a different format.
 
 Default report paths:
 
@@ -82,24 +119,6 @@ Default report paths:
 - `reports/weather/{YYYY-MM-DD}_travel_weather.md`
 
 Before creating a dated report filename, use `get_datetime` and use the returned date.
-
-Suggested report structure:
-
-```md
-# Weather Report
-
-Date: {YYYY-MM-DD}
-Timezone: {Timezone}
-Location: {Location}
-
-## Summary
-
-## Forecast
-
-## Practical Impact
-
-## Preparation
-```
 
 ---
 
