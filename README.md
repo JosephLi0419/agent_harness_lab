@@ -265,6 +265,25 @@ Skill selection priority:
 8. general_research
 ```
 
+## To Do
+
+- [ ] Observability
+   - Add structured runtime traces for router decisions, selected skills,
+     confidence, fallback reasons, tool calls, report-format reads, todo updates,
+     and memory actions.
+   - Make it easy to debug why a run chose a skill or skipped a required step.
+
+- [ ] Skill schema validation
+   - Add a `validate-skills` command that checks each `SKILL.md` front matter,
+     required `reports.md`, duplicate skill names, report-generation rules, and
+     package-data coverage.
+   - Fail fast when a skill is malformed instead of discovering it during a run.
+
+- [ ] More granular tool permission policy
+   - Move beyond a single high-risk write approval path.
+   - Define per-tool and per-path permissions for reads, writes, memory updates,
+     report generation, web access, and future domain-specific tools.
+
 ## Reusing This Repo
 
 To adapt this project for your own agent:
